@@ -1,9 +1,8 @@
-import {
-  CdkDragDrop,
-  moveItemInArray,
-  transferArrayItem,
-} from '@angular/cdk/drag-drop';
-import { Component, Input } from '@angular/core';
+import { SelectionModel } from '@angular/cdk/collections';
+import { CdkDragDrop, CdkDragStart } from '@angular/cdk/drag-drop';
+import { Component, ElementRef, HostListener, Input } from '@angular/core';
+
+type Selected<T> = { indexes: number[]; values: T[] };
 
 @Component({
   selector: 'multi-drag',
@@ -11,31 +10,86 @@ import { Component, Input } from '@angular/core';
   template: `
     <div
       class="list"
+      [id]="dropListId"
       cdkDropList
-      (cdkDropListDropped)="drop($event)"
+      (cdkDropListDropped)="onDrop($event)"
       [cdkDropListData]="data"
+      [cdkDropListConnectedTo]="connectedTo"
+      [cdkDropListSortPredicate]="canSort"
     >
-      <div class="item" *ngFor="let item of data" cdkDrag>{{ item }}</div>
+      <div
+        class="item"
+        *ngFor="let item of data; let i = index"
+        cdkDrag
+        (cdkDragStarted)="onDragStart($event, i)"
+        (cdkDragEnded)="selectionModel.clear()"
+        [class.selected]="selectionModel.isSelected(i)"
+        (click)="selectionModel.toggle(i)"
+      >
+        {{ item }}
+        <div *cdkDragPreview class="preview">
+          {{ selectionModel.selected.length }}
+        </div>
+      </div>
     </div>
+    <!-- <pre><code>{{ selectionModel.selected | json }}</code></pre> -->
   `,
 })
 export class MultiDragComponent<T> {
   @Input() data!: T[];
+  @Input() connectedTo!: string;
+  @Input() dropListId!: string;
 
-  drop(event: CdkDragDrop<T[]>) {
-    if (event.previousContainer === event.container) {
-      moveItemInArray(
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
-    } else {
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
+  readonly selectionModel = new SelectionModel<number>(true, []);
+
+  constructor(private readonly elementRef: ElementRef) {}
+
+  onDragStart(event: CdkDragStart<Selected<T>>, index: number) {
+    if (!this.selectionModel.isSelected(index)) {
+      this.selectionModel.clear();
+      this.selectionModel.select(index);
+    }
+    const selectedIndexes = [...this.selectionModel.selected].sort();
+    event.source.data = {
+      indexes: selectedIndexes,
+      values: [...selectedIndexes.map((i) => this.data[i])],
+    };
+  }
+
+  canSort() {
+    // TODO: prevent dragging in the same container?
+    return false;
+  }
+
+  onDrop(event: CdkDragDrop<T[], T[], Selected<T>>) {
+    if (
+      !event.isPointerOverContainer ||
+      event.previousContainer === event.container
+    ) {
+      return;
+    }
+
+    pullAt(event.previousContainer.data, event.item.data.indexes);
+    event.container.data.splice(
+      event.currentIndex,
+      0,
+      ...event.item.data.values
+    );
+  }
+
+  @HostListener('document:click', ['$event'])
+  private clickout(event: MouseEvent) {
+    if (
+      this.selectionModel.hasValue() &&
+      !this.elementRef.nativeElement.contains(event.target)
+    ) {
+      this.selectionModel.clear();
     }
   }
 }
+
+const pullAt = (arr: any[], idxs: number[]) =>
+  idxs
+    .reverse()
+    .map((idx) => arr.splice(idx, 1)[0])
+    .reverse();

@@ -1,4 +1,12 @@
-<ng-container cdkDropListGroup>
-  <multi-drag [data]="list1"></multi-drag>
-  <multi-drag [data]="list2"></multi-drag>
+<ng-container>
+  <multi-drag
+    [data]="list1"
+    [connectedTo]="'list2'"
+    [dropListId]="'list1'"
+  ></multi-drag>
+  <multi-drag
+    [data]="list2"
+    [connectedTo]="'list1'"
+    [dropListId]="'list2'"
+  ></multi-drag>
 </ng-container>
