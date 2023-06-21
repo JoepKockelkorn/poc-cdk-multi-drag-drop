@@ -1,18 +1,4 @@
 <ng-container cdkDropListGroup>
-  <div
-    class="list"
-    cdkDropList
-    (cdkDropListDropped)="drop($event)"
-    [cdkDropListData]="list1"
-  >
-    <div class="item" *ngFor="let item of list1" cdkDrag>{{ item }}</div>
-  </div>
-  <div
-    class="list"
-    cdkDropList
-    (cdkDropListDropped)="drop($event)"
-    [cdkDropListData]="list2"
-  >
-    <div class="item" *ngFor="let item of list2" cdkDrag>{{ item }}</div>
-  </div>
+  <multi-drag [data]="list1"></multi-drag>
+  <multi-drag [data]="list2"></multi-drag>
 </ng-container>
