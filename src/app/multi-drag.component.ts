@@ -1,6 +1,17 @@
 import { SelectionModel } from '@angular/cdk/collections';
-import { CdkDragDrop, CdkDragStart } from '@angular/cdk/drag-drop';
-import { Component, ElementRef, HostListener, Input } from '@angular/core';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragStart,
+  CdkDropList,
+} from '@angular/cdk/drag-drop';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  ViewChild,
+} from '@angular/core';
 
 type Selected<T> = { indexes: number[]; values: T[] };
 
@@ -15,7 +26,6 @@ type Selected<T> = { indexes: number[]; values: T[] };
       (cdkDropListDropped)="onDrop($event)"
       [cdkDropListData]="data"
       [cdkDropListConnectedTo]="connectedTo"
-      [cdkDropListSortPredicate]="canSort"
     >
       <div
         class="item"
@@ -42,6 +52,8 @@ export class MultiDragComponent<T> {
 
   readonly selectionModel = new SelectionModel<number>(true, []);
 
+  @ViewChild(CdkDropList) dropList!: CdkDropList;
+
   constructor(private readonly elementRef: ElementRef) {}
 
   onDragStart(event: CdkDragStart<Selected<T>>, index: number) {
@@ -54,11 +66,6 @@ export class MultiDragComponent<T> {
       indexes: selectedIndexes,
       values: [...selectedIndexes.map((i) => this.data[i])],
     };
-  }
-
-  canSort() {
-    // TODO: prevent dragging in the same container?
-    return false;
   }
 
   onDrop(event: CdkDragDrop<T[], T[], Selected<T>>) {
